@@ -9,6 +9,7 @@ import {
   getAllSetores, 
   getTiposTarefa,
   getCheckinsLast5Days,
+  getCheckinsHistoricoCompleto,
   getOrdensServicoPendentes,
   getOrdensServicoAssinadas,
   getEPIs,
@@ -18,7 +19,7 @@ import {
   getUserById
 } from "./db";
 import { users, setores, tiposTarefa, checkins, ordensServico, epis, epcs, validacoesEPI, validacoesAmbiente } from "../drizzle/schema";
-import { eq, and, desc, gte, inArray } from "drizzle-orm";
+import { eq, and, desc, gte, inArray, count, sql } from "drizzle-orm";
 import { z } from "zod";
 
 export const appRouter = router({
@@ -222,7 +223,7 @@ export const appRouter = router({
   // Admin - Dashboard
   admin: router({
     getDashboardMetrics: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user?.role !== "admin" && ctx.user?.role !== "developer") {
+      if (ctx.user?.role !== "admin" && ctx.user?.role !== "developer" && ctx.user?.role !== "tst") {
         throw new Error("Unauthorized");
       }
 
@@ -243,11 +244,19 @@ export const appRouter = router({
 
       const setoresAtivos = await db.select().from(setores).where(eq(setores.ativo, true));
 
+      const [totalOsRow] = await db.select({ c: count() }).from(ordensServico);
+      const [osConcluidasRow] = await db
+        .select({ c: count() })
+        .from(ordensServico)
+        .where(eq(ordensServico.status, "concluida"));
+
       return {
         checkinsHoje: checkinsHoje.length,
         totalCheckins: totalCheckins.length,
         osPendentes: osPendentes.length,
         osAssinadas: osAssinadas.length,
+        osConcluidas: Number(osConcluidasRow?.c ?? 0),
+        totalOrdensServico: Number(totalOsRow?.c ?? 0),
         setoresAtivos: setoresAtivos.length
       };
     }),
@@ -267,6 +276,168 @@ export const appRouter = router({
 
       return await getTiposTarefa();
     }),
+
+    /** Catálogo de EPIs e EPCs ativos para cadastro de atividade (TST). */
+    getCatalogoEpiEpc: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user?.role !== "tst") {
+        throw new Error("Unauthorized");
+      }
+
+      const [episList, epcsList] = await Promise.all([getEPIs(), getEPCs()]);
+      return { epis: episList, epcs: epcsList };
+    }),
+
+    /** Cadastro de tipo de atividade com riscos e vínculos a EPIs/EPCs (apenas TST). */
+    cadastrarAtividade: protectedProcedure
+      .input(
+        z.object({
+          nome: z.string().min(1).max(100),
+          descricao: z.string().max(4000).optional(),
+          grauRisco: z.enum(["baixo", "medio", "alto", "critico"]),
+          riscos: z.array(z.string().min(1).max(500)).min(1, "Informe ao menos um risco"),
+          epiIds: z.array(z.number().int().positive()).default([]),
+          epcIds: z.array(z.number().int().positive()).default([]),
+        }),
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "tst") {
+          throw new Error("Apenas Técnico de Segurança pode cadastrar atividades.");
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const nomeNorm = input.nome.trim();
+        const dup = await db
+          .select({ id: tiposTarefa.id })
+          .from(tiposTarefa)
+          .where(sql`lower(trim(${tiposTarefa.nome})) = ${nomeNorm.toLowerCase()}`)
+          .limit(1);
+
+        if (dup.length > 0) {
+          throw new Error("Já existe uma atividade com este nome.");
+        }
+
+        const epiIds = [...new Set(input.epiIds)];
+        const epcIds = [...new Set(input.epcIds)];
+
+        if (epiIds.length > 0) {
+          const found = await db.select({ id: epis.id }).from(epis).where(inArray(epis.id, epiIds));
+          if (found.length !== epiIds.length) {
+            throw new Error("Um ou mais EPIs selecionados são inválidos.");
+          }
+        }
+        if (epcIds.length > 0) {
+          const found = await db.select({ id: epcs.id }).from(epcs).where(inArray(epcs.id, epcIds));
+          if (found.length !== epcIds.length) {
+            throw new Error("Um ou mais EPCs selecionados são inválidos.");
+          }
+        }
+
+        const now = new Date();
+        const inserted = await db
+          .insert(tiposTarefa)
+          .values({
+            nome: nomeNorm,
+            descricao: input.descricao?.trim() || null,
+            grauRisco: input.grauRisco,
+            riscos: input.riscos.map((r) => r.trim()).filter((r) => r.length > 0),
+            epiIds,
+            epcIds,
+            ativo: true,
+            updatedAt: now,
+          })
+          .returning({ id: tiposTarefa.id, nome: tiposTarefa.nome });
+
+        const row = inserted[0];
+        if (!row) throw new Error("Falha ao cadastrar atividade.");
+
+        return { success: true, id: row.id, nome: row.nome };
+      }),
+
+    /** Cadastro de EPI no catálogo (apenas TST). */
+    cadastrarEpi: protectedProcedure
+      .input(
+        z.object({
+          nome: z.string().min(1).max(100),
+          descricao: z.string().max(2000).optional(),
+        }),
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "tst") {
+          throw new Error("Apenas Técnico de Segurança pode cadastrar EPIs.");
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const nomeNorm = input.nome.trim();
+        const dup = await db
+          .select({ id: epis.id })
+          .from(epis)
+          .where(sql`lower(trim(${epis.nome})) = ${nomeNorm.toLowerCase()}`)
+          .limit(1);
+
+        if (dup.length > 0) {
+          throw new Error("Já existe um EPI com este nome.");
+        }
+
+        const inserted = await db
+          .insert(epis)
+          .values({
+            nome: nomeNorm,
+            descricao: input.descricao?.trim() || null,
+            ativo: true,
+          })
+          .returning({ id: epis.id, nome: epis.nome });
+
+        const row = inserted[0];
+        if (!row) throw new Error("Falha ao cadastrar EPI.");
+
+        return { id: row.id, nome: row.nome };
+      }),
+
+    /** Cadastro de EPC no catálogo (apenas TST). */
+    cadastrarEpc: protectedProcedure
+      .input(
+        z.object({
+          nome: z.string().min(1).max(100),
+          descricao: z.string().max(2000).optional(),
+        }),
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "tst") {
+          throw new Error("Apenas Técnico de Segurança pode cadastrar EPCs.");
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const nomeNorm = input.nome.trim();
+        const dup = await db
+          .select({ id: epcs.id })
+          .from(epcs)
+          .where(sql`lower(trim(${epcs.nome})) = ${nomeNorm.toLowerCase()}`)
+          .limit(1);
+
+        if (dup.length > 0) {
+          throw new Error("Já existe um EPC com este nome.");
+        }
+
+        const inserted = await db
+          .insert(epcs)
+          .values({
+            nome: nomeNorm,
+            descricao: input.descricao?.trim() || null,
+            ativo: true,
+          })
+          .returning({ id: epcs.id, nome: epcs.nome });
+
+        const row = inserted[0];
+        if (!row) throw new Error("Falha ao cadastrar EPC.");
+
+        return { id: row.id, nome: row.nome };
+      }),
 
     getOrdensServico: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user?.role !== "admin" && ctx.user?.role !== "developer") {
@@ -288,6 +459,15 @@ export const appRouter = router({
       }
 
       return await getCheckinsLast5Days();
+    }),
+
+    /** Histórico completo de check-ins (todos os registros), para painel de gestão. */
+    getHistoricoCheckinsCompleto: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user?.role !== "admin" && ctx.user?.role !== "developer" && ctx.user?.role !== "tst") {
+        throw new Error("Unauthorized");
+      }
+
+      return await getCheckinsHistoricoCompleto();
     }),
 
     getMonitoramentoOS: protectedProcedure.query(async ({ ctx }) => {
@@ -479,20 +659,44 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
 
-        const result = await db.insert(users).values({
-          openId: `admin-${Date.now()}`,
-          name: input.name,
-          email: input.email,
-          matricula: input.matricula,
-          setor: input.setor,
-          gestorImediato: input.gestorImediato,
-          role: "admin",
-          ativo: true,
-          loginMethod: "manual",
-          lastSignedIn: new Date()
-        });
+        const inserted = await db
+          .insert(users)
+          .values({
+            openId: `admin-${Date.now()}`,
+            name: input.name,
+            email: input.email,
+            matricula: input.matricula,
+            setor: input.setor || null,
+            gestorImediato: input.gestorImediato || null,
+            role: "admin",
+            ativo: true,
+            loginMethod: "manual",
+            lastSignedIn: new Date(),
+          })
+          .returning({ id: users.id });
 
-        return { id: (result as any).insertId };
+        const row = inserted[0];
+        if (!row) throw new Error("Falha ao criar administrador.");
+
+        return { id: row.id };
+      }),
+
+    ativarUsuario: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user?.role !== "developer") {
+          throw new Error("Unauthorized");
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        await db
+          .update(users)
+          .set({ ativo: true, updatedAt: new Date() })
+          .where(eq(users.id, input.userId));
+
+        return { success: true };
       }),
 
     inativarUsuario: protectedProcedure
@@ -521,6 +725,16 @@ export const appRouter = router({
 
         const db = await getDb();
         if (!db) throw new Error("Database not available");
+
+        if (input.userId === ctx.user.id) {
+          throw new Error("Não é possível excluir seu próprio usuário.");
+        }
+
+        const [target] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+        if (!target) throw new Error("Usuário não encontrado.");
+        if (target.role === "developer") {
+          throw new Error("Não é possível excluir um usuário developer.");
+        }
 
         await db.delete(users).where(eq(users.id, input.userId));
 

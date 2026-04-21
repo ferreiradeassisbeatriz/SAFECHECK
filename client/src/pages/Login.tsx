@@ -93,12 +93,12 @@ export default function Login() {
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Shield className="h-10 w-10 text-blue-600" />
-            <h1 className="text-3xl font-bold text-slate-900">SAFECHECK</h1>
+        <div className="mb-6 text-center sm:mb-8">
+          <div className="mb-2 flex items-center justify-center gap-2 sm:mb-3 sm:gap-3">
+            <Shield className="h-8 w-8 shrink-0 text-blue-600 sm:h-9 sm:w-9 md:h-10 md:w-10" />
+            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">SAFECHECK</h1>
           </div>
-          <p className="text-slate-600">Sistema de Gestão de Segurança em Obra</p>
+          <p className="text-sm text-slate-600 sm:text-base">Sistema de Gestão de Segurança em Obra</p>
         </div>
 
         {/* Tabs */}

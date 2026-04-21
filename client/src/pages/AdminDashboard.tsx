@@ -74,15 +74,17 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 p-6 shadow-sm">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-slate-900">Painel Administrativo</h1>
-          <p className="text-slate-600 mt-1">Gestão de segurança da obra</p>
+      <div className="border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5 sm:py-3.5">
+        <div className="mx-auto max-w-7xl">
+          <h1 className="text-xl font-bold leading-tight text-slate-900 sm:text-2xl md:text-3xl">
+            Painel Administrativo
+          </h1>
+          <p className="mt-0.5 text-xs text-slate-600 sm:text-sm">Gestão de segurança da obra</p>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-5 sm:py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>

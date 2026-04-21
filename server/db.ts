@@ -256,6 +256,34 @@ export async function getCheckinsLast5Days() {
   ).orderBy(desc(checkins.createdAt));
 }
 
+/** Histórico completo de check-ins para painel administrativo (com joins). */
+export async function getCheckinsHistoricoCompleto() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get checkins historico: database not available");
+    return [];
+  }
+
+  return await db
+    .select({
+      id: checkins.id,
+      createdAt: checkins.createdAt,
+      updatedAt: checkins.updatedAt,
+      epiValidado: checkins.epiValidado,
+      ambienteValidado: checkins.ambienteValidado,
+      assinaturaPendente: checkins.assinaturaPendente,
+      nomeColaborador: users.name,
+      matricula: users.matricula,
+      setorNome: setores.nome,
+      nomeTarefa: tiposTarefa.nome,
+    })
+    .from(checkins)
+    .leftJoin(users, eq(users.id, checkins.usuarioId))
+    .leftJoin(setores, eq(setores.id, checkins.setorId))
+    .leftJoin(tiposTarefa, eq(tiposTarefa.id, checkins.tipoTarefaId))
+    .orderBy(desc(checkins.createdAt));
+}
+
 export async function getOrdensServicoPendentes() {
   const db = await getDb();
   if (!db) {

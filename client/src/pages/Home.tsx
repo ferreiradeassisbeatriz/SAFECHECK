@@ -18,16 +18,16 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-linear-to-r from-blue-900 to-indigo-900 text-white p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-3 mb-4">
-            <Shield className="h-10 w-10" />
-            <h1 className="text-4xl font-bold">SAFECHECK</h1>
+      <div className="bg-linear-to-r from-blue-900 to-indigo-900 px-4 py-6 text-white sm:px-6 sm:py-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-2 flex flex-wrap items-center gap-2 sm:mb-3 sm:gap-3">
+            <Shield className="h-8 w-8 shrink-0 sm:h-9 sm:w-9 md:h-10 md:w-10" />
+            <h1 className="text-2xl font-bold leading-tight sm:text-3xl md:text-4xl">SAFECHECK</h1>
           </div>
-          <p className="text-xl text-blue-100 mb-6">
+          <p className="mb-4 max-w-2xl text-base text-blue-100 sm:mb-5 sm:text-lg md:text-xl">
             Sistema Integrado de Gestão de Segurança em Obra
           </p>
-          <div className="flex gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             <Button 
               className="bg-white text-blue-900 hover:bg-blue-50 font-semibold"
               onClick={() => router.push("/login")}
@@ -46,7 +46,7 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto p-8">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           <Card className="hover:shadow-lg transition-shadow">
@@ -72,7 +72,7 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Controle completo de acesso, setores e responsabilidades de cada operário na obra
+                Controle das atividades realizadas, setores e responsabilidades de cada operário na obra
               </CardDescription>
             </CardContent>
           </Card>

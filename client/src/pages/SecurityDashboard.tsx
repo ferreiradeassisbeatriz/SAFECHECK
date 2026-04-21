@@ -406,18 +406,24 @@ li{margin:0 0 4px 0;font-size:13px}
   }, [showSignatureModal]);
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-6">
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <Shield className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-slate-900">Segurança em Primeiro Lugar</h1>
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 px-4 py-3 sm:p-6">
+      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5 sm:py-4">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex items-start gap-2 sm:items-center sm:gap-3">
+            <Shield className="mt-0.5 h-6 w-6 shrink-0 text-blue-600 sm:mt-0 sm:h-7 sm:w-7" />
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold leading-tight text-slate-900 sm:text-2xl md:text-3xl">
+                Segurança em Primeiro Lugar
+              </h1>
+              <p className="mt-0.5 text-xs text-slate-600 sm:text-sm">
+                Validações vinculadas à atividade selecionada
+              </p>
+            </div>
           </div>
-          <p className="text-slate-600">Validações vinculadas à atividade selecionada</p>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto pt-6">
+      <div className="mx-auto max-w-6xl pt-4 sm:pt-6">
         <Alert className="mb-4 border-blue-300 bg-blue-50">
           <AlertDescription className="text-blue-900">
             <strong>Atividade selecionada:</strong>{" "}

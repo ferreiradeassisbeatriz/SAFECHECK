@@ -130,34 +130,35 @@ export default function SelectTask() {
   const riscos = det ? asRiscos(det.riscos) : [];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 px-3 py-4 sm:px-5 sm:py-6">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 px-3 py-3 sm:px-5 sm:py-5">
       <div className="mx-auto w-full max-w-6xl">
-        <div className="mb-6 sm:mb-8">
-          <div className="mb-4 flex justify-end">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white sm:h-11 sm:w-11 md:h-12 md:w-12">
+                <HardHat className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl md:text-3xl lg:text-4xl">
+                  Qual atividade você vai realizar?
+                </h1>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-base">
+                  Toque em uma atividade na lista. Em seguida o sistema mostra os{" "}
+                  <strong>riscos</strong>, os <strong>EPIs</strong> e os <strong>EPCs</strong>{" "}
+                  necessários antes de seguir para a validação de segurança.
+                </p>
+              </div>
+            </div>
             <Button
               type="button"
               variant="outline"
-              className="gap-2"
+              size="sm"
+              className="h-9 shrink-0 gap-2 self-stretch sm:self-auto sm:h-10"
               onClick={() => void logout()}
             >
               <LogOut className="h-4 w-4" />
               Logout
             </Button>
-          </div>
-          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white sm:h-12 sm:w-12">
-              <HardHat className="h-6 w-6 sm:h-7 sm:w-7" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
-                Qual atividade você vai realizar?
-              </h1>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600 sm:text-base">
-                Toque em uma atividade na lista. Em seguida o sistema mostra os{" "}
-                <strong>riscos</strong>, os <strong>EPIs</strong> e os <strong>EPCs</strong>{" "}
-                necessários antes de seguir para a validação de segurança.
-              </p>
-            </div>
           </div>
         </div>
 
